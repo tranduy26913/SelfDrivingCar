@@ -1,68 +1,82 @@
 import RPi.GPIO as GPIO
 import time
 
-SPEED = 10
+class AlphaBot(object):
+    
+    def __init__(self,in1=13,in2=12,ena=6,in3=21,in4=20,enb=26):
+        self.IN1 = in1
+        self.IN2 = in2
+        self.IN3 = in3
+        self.IN4 = in4
+        self.ENA = ena
+        self.ENB = enb
 
-L_PWM_PIN = 16
-L_DIR_PIN = 15
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setwarnings(False)
+        GPIO.setup(self.IN1,GPIO.OUT)
+        GPIO.setup(self.IN2,GPIO.OUT)
+        GPIO.setup(self.IN3,GPIO.OUT)
+        GPIO.setup(self.IN4,GPIO.OUT)
+        GPIO.setup(self.ENA,GPIO.OUT)
+        GPIO.setup(self.ENB,GPIO.OUT)
+        self.stop()
+        self.PWMA = GPIO.PWM(self.ENA,500)
+        self.PWMB = GPIO.PWM(self.ENB,500)
+        self.PWMA.start(50)
+        self.PWMB.start(50)
 
-R_PWM_PIN = 12
-R_DIR_PIN = 11
+    def backward(self):
+        GPIO.output(self.IN1,GPIO.HIGH)
+        GPIO.output(self.IN2,GPIO.LOW)
+        GPIO.output(self.IN3,GPIO.LOW)
+        GPIO.output(self.IN4,GPIO.HIGH)
 
-GPIO.setmode(GPIO.BOARD)
+    def stop(self):
+        GPIO.output(self.IN1,GPIO.LOW)
+        GPIO.output(self.IN2,GPIO.LOW)
+        GPIO.output(self.IN3,GPIO.LOW)
+        GPIO.output(self.IN4,GPIO.LOW)
 
-GPIO.setup(L_PWM_PIN, GPIO.OUT)
-GPIO.setup(L_DIR_PIN, GPIO.OUT, initial=GPIO.LOW)
-GPIO.setup(R_PWM_PIN, GPIO.OUT)
-GPIO.setup(R_DIR_PIN, GPIO.OUT, initial=GPIO.LOW)
+    def forward(self):
+        GPIO.output(self.IN1,GPIO.LOW)
+        GPIO.output(self.IN2,GPIO.HIGH)
+        GPIO.output(self.IN3,GPIO.HIGH)
+        GPIO.output(self.IN4,GPIO.LOW)
 
-L_MOTOR = GPIO.PWM(L_PWM_PIN, 1000)
-R_MOTOR = GPIO.PWM(R_PWM_PIN, 1000)
+    def right(self):
+        GPIO.output(self.IN1,GPIO.LOW)
+        GPIO.output(self.IN2,GPIO.LOW)
+        GPIO.output(self.IN3,GPIO.LOW)
+        GPIO.output(self.IN4,GPIO.HIGH)
 
-def MotorsSetup():
-	L_MOTOR.start(0)
-	R_MOTOR.start(0)
+    def left(self):
+        GPIO.output(self.IN1,GPIO.HIGH)
+        GPIO.output(self.IN2,GPIO.LOW)
+        GPIO.output(self.IN3,GPIO.LOW)
+        GPIO.output(self.IN4,GPIO.LOW)
+        
+    def setPWMA(self,value):
+        self.PWMA.ChangeDutyCycle(value)
 
-def L_Speed(speed):
-    if speed <= 0:
-        GPIO.output(L_DIR_PIN, GPIO.HIGH)
-    else:
-        GPIO.output(L_DIR_PIN, GPIO.LOW)
+    def setPWMB(self,value):
+        self.PWMB.ChangeDutyCycle(value)    
+        
+    def setMotor(self, left, right):
+        if((right >= 0) and (right <= 100)):
+            GPIO.output(self.IN1,GPIO.HIGH)
+            GPIO.output(self.IN2,GPIO.LOW)
+            self.PWMA.ChangeDutyCycle(right)
+        elif((right < 0) and (right >= -100)):
+            GPIO.output(self.IN1,GPIO.LOW)
+            GPIO.output(self.IN2,GPIO.HIGH)
+            self.PWMA.ChangeDutyCycle(0 - right)
+        if((left >= 0) and (left <= 100)):
+            GPIO.output(self.IN3,GPIO.HIGH)
+            GPIO.output(self.IN4,GPIO.LOW)
+            self.PWMB.ChangeDutyCycle(left)
+        elif((left < 0) and (left >= -100)):
+            GPIO.output(self.IN3,GPIO.LOW)
+            GPIO.output(self.IN4,GPIO.HIGH)
+            self.PWMB.ChangeDutyCycle(0 - left)
 
-    speed = abs(speed)
-    if speed > 100:
-        speed = 100
-
-    L_MOTOR.ChangeDutyCycle(speed)
-
-def R_Speed(speed):
-    if speed <= 0:
-        GPIO.output(R_DIR_PIN, GPIO.LOW)
-    else:
-        GPIO.output(R_DIR_PIN, GPIO.HIGH)
-
-    speed = abs(speed)
-    if speed > 100:
-        speed = 100
-
-    R_MOTOR.ChangeDutyCycle(speed)
-
-def Direction(difference):
-    difference /= 2
-    L_Speed(SPEED+difference)
-    R_Speed(SPEED-difference)
-
-def BaseSpeed(speed):
-	global SPEED
-	SPEED = speed
-	L_Speed(SPEED)
-	R_Speed(SPEED)
-
-def GetSpeed():
-	global SPEED
-	return SPEED
-
-def MotorsStop():
-	L_MOTOR.stop()
-	R_MOTOR.stop()
-	GPIO.cleanup()
+    
